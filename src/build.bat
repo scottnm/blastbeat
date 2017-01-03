@@ -4,7 +4,7 @@ SETLOCAL
 SET BUILD_DIR=..\builds
 SET CC=cl
 SET CFLAGS=-Zi
-SET LIBS=user32.lib
+SET LIBS=user32.lib gdi32.lib
 
 mkdir %BUILD_DIR%
 pushd %BUILD_DIR%
