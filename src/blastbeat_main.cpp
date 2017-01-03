@@ -45,7 +45,7 @@ WinMain(HINSTANCE instance, HINSTANCE prev_instance, LPSTR cmd_line, int show_cm
         }
         else
         {
-            // TODO (scott): logging
+            break;
         }
     }
 
@@ -70,7 +70,7 @@ blastbeat_window_callback(HWND window, UINT message, WPARAM w_param, LPARAM l_pa
 
         case WM_CLOSE:
             OutputDebugStringA("WM_CLOSE\n");
-            exit(0);
+            PostQuitMessage(0);
         break;
 
         case WM_ACTIVATEAPP:
