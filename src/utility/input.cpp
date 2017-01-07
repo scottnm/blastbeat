@@ -78,10 +78,14 @@ namespace blastbeat
         return input_state;
     }
 
-    void set_gamepad_state(int gamepad_num)
+    void set_gamepad_state (int gamepad_num, uint16_t left_motor_vibration, uint16_t right_motor_vibration)
     {
         /* set the state */
         assert(input_system_initialized);
+        XINPUT_VIBRATION vibration = {};
+        vibration.wLeftMotorSpeed = left_motor_vibration;
+        vibration.wRightMotorSpeed = right_motor_vibration;
+        xinput_set_state(gamepad_num, &vibration);
     }
 }
 

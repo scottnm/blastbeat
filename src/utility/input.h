@@ -26,7 +26,7 @@ namespace blastbeat
 
     void          init_input_system (void);
     gamepad_state get_gamepad_state (int gamepad_num);
-    void          set_gamepad_state (int gamepad_num);
+    void          set_gamepad_state (int gamepad_num, uint16_t left_motor_vibration, uint16_t right_motor_vibration);
 }
 
 #endif //__INPUT_H__

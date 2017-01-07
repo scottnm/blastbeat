@@ -113,6 +113,19 @@ WinMain(HINSTANCE instance, HINSTANCE prev_instance, LPSTR cmd_line, int show_cm
                 {
                     --y_offset;
                 }
+
+                if (gamepad.left_stick_x > XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE)
+                {
+                    blastbeat::set_gamepad_state(gamepad_id, 0, gamepad.left_stick_x);
+                }
+                else if (gamepad.left_stick_x < -XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE)
+                {
+                    blastbeat::set_gamepad_state(gamepad_id, -gamepad.left_stick_x, 0);
+                }
+                else
+                {
+                    blastbeat::set_gamepad_state(gamepad_id, 0, 0);
+                }
             }
         }
 
