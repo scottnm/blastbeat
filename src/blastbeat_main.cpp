@@ -4,6 +4,7 @@
  *****************************/
 
 #include "blastbeat_main.h"
+#include "utility/input.h"
 #include "utility/rect_converter.h"
 #include "utility/render_buffer.h"
 
@@ -11,7 +12,11 @@
 #include <cassert>
 #include <cstdint>
 #include <cstdio>
+#include <xinput.h>
 
+using blastbeat::gamepad_state;
+using blastbeat::init_input_system;
+using blastbeat::render_buffer;
 using blastbeat::utility::lrtb_rect;
 using blastbeat::utility::xywh_rect;
 using blastbeat::utility::lrtb_to_xywh;
@@ -37,6 +42,7 @@ global render_buffer g_backbuffer;
 int CALLBACK
 WinMain(HINSTANCE instance, HINSTANCE prev_instance, LPSTR cmd_line, int show_cmd)
 {
+    init_input_system();
     init_render_buffer(&g_backbuffer, 4);
 
     WNDCLASS window_class = {};
@@ -86,9 +92,31 @@ WinMain(HINSTANCE instance, HINSTANCE prev_instance, LPSTR cmd_line, int show_cm
             DispatchMessage(&message); 
         }
 
+        for (int gamepad_id = 0; gamepad_id < XUSER_MAX_COUNT; ++gamepad_id)
+        {
+            gamepad_state gamepad = blastbeat::get_gamepad_state(gamepad_id);
+            if (gamepad.is_connected)
+            {
+                if (gamepad.b)
+                {
+                    ++x_offset;
+                }
+                if (gamepad.x)
+                {
+                    --x_offset;
+                }
+                if (gamepad.a)
+                {
+                    ++y_offset;
+                }
+                if (gamepad.y)
+                {
+                    --y_offset;
+                }
+            }
+        }
+
         render_crazy_gradient(&g_backbuffer, x_offset, floor(500 * cos(y_offset / 70.0)));
-        ++x_offset;
-        ++y_offset;
 
         auto device_context = GetDC(window);
         auto win_rect = get_window_rect(window);
