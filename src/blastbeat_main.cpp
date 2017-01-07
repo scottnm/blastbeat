@@ -25,7 +25,7 @@ using blastbeat::utility::lrtb_to_xywh;
 internal void       init_render_buffer (render_buffer* rbuf, int bytes_per_pixel);
 internal xywh_rect  get_window_rect (HWND window);
 internal void       resize_dib_section (render_buffer* rbuf, int width, int height);
-internal void       update_window (render_buffer* src_buf, HDC dest_dc, xywh_rect dest_rect);
+internal void       update_window (render_buffer* src_buf, HDC dest_dc, int dest_width, int dest_height);
 internal void       render_crazy_gradient (render_buffer* rbuf, int x_offset, int y_offset);
 
 // TODO (scott): fix global scope later
@@ -87,7 +87,8 @@ WinMain(HINSTANCE instance, HINSTANCE prev_instance, LPSTR cmd_line, int show_cm
         ++y_offset;
 
         auto device_context = GetDC(window);
-        update_window(&g_backbuffer, device_context, get_window_rect(window));
+        auto win_rect = get_window_rect(window);
+        update_window(&g_backbuffer, device_context, win_rect.width, win_rect.height);
         ReleaseDC(window, device_context);
     }
 
@@ -137,7 +138,8 @@ blastbeat_window_message_router(HWND window, UINT message, WPARAM w_param, LPARA
         {
             PAINTSTRUCT paint;
             HDC device_context = BeginPaint(window, &paint);
-            update_window(&g_backbuffer, device_context, get_window_rect(window));
+            auto win_rect = get_window_rect(window);
+            update_window(&g_backbuffer, device_context, win_rect.width, win_rect.height);
             EndPaint(window, &paint);
         }
         break;
@@ -194,11 +196,11 @@ resize_dib_section(render_buffer* rbuf, int width, int height)
 }
 
 internal void
-update_window(render_buffer* src_buf, HDC dest_dc, xywh_rect dest_rect)
+update_window(render_buffer* src_buf, HDC dest_dc, int dest_width, int dest_height)
 {
     StretchDIBits(dest_dc,
                   0, 0, src_buf->width, src_buf->height,
-                  0, 0, dest_rect.width, dest_rect.height, 
+                  0, 0, dest_width, dest_height, 
                   src_buf->pixel_buf, &src_buf->bmpinfo,
                   DIB_RGB_COLORS, SRCCOPY); 
 }
