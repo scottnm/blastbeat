@@ -14,7 +14,13 @@ FOR %%F IN (%__FILES__%) DO (
         SET "FILES=!FILES! %SRC_PREFIX%%%F"
 )
 
+SET __INCLUDE_DIRS__=.\ ^
+                     .\utility
+FOR %%D IN (%__INCLUDE_DIRS__%) DO (
+        SET "INCLUDE_DIRS=!INCLUDE_DIRS! /I%%D"
+)
+
 mkdir %BUILD_DIR%
 pushd %BUILD_DIR%
-%CC% %CFLAGS% %FILES% %LIBS%
+%CC% %INCLUDE_DIRS% %CFLAGS% %FILES% %LIBS%
 popd

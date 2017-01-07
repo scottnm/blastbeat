@@ -5,6 +5,7 @@
 
 #include "blastbeat_main.h"
 #include "utility/rect_converter.h"
+#include "utility/render_buffer.h"
 
 #include <cmath>
 #include <cassert>
@@ -21,23 +22,21 @@ using blastbeat::utility::lrtb_to_xywh;
 /******************
  * Internal funcs *
  ******************/
-internal void init_bitmap_info();
-internal xywh_rect get_window_rect(HWND window);
-internal void resize_dib_section(int width, int height);
-internal void update_window(HDC device_context, xywh_rect client_rect, int x, int y, int width, int height);
-internal void render_crazy_gradient(int x_offset, int y_offset);
+internal void       init_render_buffer (render_buffer* rbuf, int bytes_per_pixel);
+internal xywh_rect  get_window_rect (HWND window);
+internal void       resize_dib_section (render_buffer* rbuf, int width, int height);
+internal void       update_window (render_buffer* src_buf, HDC dest_dc, xywh_rect dest_rect);
+internal void       render_crazy_gradient (render_buffer* rbuf, int x_offset, int y_offset);
 
 // TODO (scott): fix global scope later
 global bool g_game_running;
-global BITMAPINFO bitmap_info;
-global void* bitmap_buffer;
-global xywh_rect bitmap_dimensions;
+global render_buffer g_backbuffer;
 
 #define WINDOW_REG_FAILED 0
 int CALLBACK
 WinMain(HINSTANCE instance, HINSTANCE prev_instance, LPSTR cmd_line, int show_cmd)
 {
-    init_bitmap_info();
+    init_render_buffer(&g_backbuffer, 4);
 
     WNDCLASS window_class = {};
     // TODO (scott) determine if these actually matter
@@ -83,17 +82,13 @@ WinMain(HINSTANCE instance, HINSTANCE prev_instance, LPSTR cmd_line, int show_cm
             DispatchMessage(&message); 
         }
 
-        render_crazy_gradient(x_offset, floor(500 * cos(y_offset / 70.0)));
+        render_crazy_gradient(&g_backbuffer, x_offset, floor(500 * cos(y_offset / 70.0)));
+        ++x_offset;
+        ++y_offset;
 
         auto device_context = GetDC(window);
-        lrtb_rect _cr;
-        GetClientRect(window, &_cr);
-        xywh_rect client_rect = lrtb_to_xywh(_cr);
-        update_window(device_context, client_rect, 0, 0, client_rect.width, client_rect.height);
+        update_window(&g_backbuffer, device_context, get_window_rect(window));
         ReleaseDC(window, device_context);
-
-        x_offset += 1;
-        y_offset += 1;
     }
 
     return 0;
@@ -129,7 +124,7 @@ blastbeat_window_message_router(HWND window, UINT message, WPARAM w_param, LPARA
         case WM_SIZE:
         {
             xywh_rect client_rect = get_window_rect(window);
-            resize_dib_section(client_rect.width, client_rect.height);
+            resize_dib_section(&g_backbuffer, client_rect.width, client_rect.height);
             OutputDebugStringA("WM_SIZE\n");
         }
         break;
@@ -142,11 +137,7 @@ blastbeat_window_message_router(HWND window, UINT message, WPARAM w_param, LPARA
         {
             PAINTSTRUCT paint;
             HDC device_context = BeginPaint(window, &paint);
-            xywh_rect paint_rect = lrtb_to_xywh(paint.rcPaint);
-            lrtb_rect _cr;
-            GetClientRect(window, &_cr);
-            xywh_rect client_rect = lrtb_to_xywh(_cr);
-            update_window(device_context, client_rect, paint_rect.x, paint_rect.y, paint_rect.width, paint_rect.height);
+            update_window(&g_backbuffer, device_context, get_window_rect(window));
             EndPaint(window, &paint);
         }
         break;
@@ -160,12 +151,13 @@ blastbeat_window_message_router(HWND window, UINT message, WPARAM w_param, LPARA
 }
 
 internal void
-init_bitmap_info()
+init_render_buffer (render_buffer* rbuf, int bytes_per_pixel)
 {
-    bitmap_info.bmiHeader.biSize = sizeof(bitmap_info.bmiHeader);
-    bitmap_info.bmiHeader.biPlanes = 1;
-    bitmap_info.bmiHeader.biBitCount = 32;
-    bitmap_info.bmiHeader.biCompression = BI_RGB;
+    rbuf->bmpinfo.bmiHeader.biSize = sizeof(rbuf->bmpinfo.bmiHeader);
+    rbuf->bmpinfo.bmiHeader.biPlanes = 1;
+    rbuf->bmpinfo.bmiHeader.biBitCount = 32;
+    rbuf->bmpinfo.bmiHeader.biCompression = BI_RGB;
+    rbuf->bytes_per_pixel = bytes_per_pixel;
 }
 
 internal xywh_rect
@@ -177,45 +169,50 @@ get_window_rect(HWND window)
 }
 
 internal void
-resize_dib_section(int width, int height)
+resize_dib_section(render_buffer* rbuf, int width, int height)
 {
-    if (bitmap_buffer != nullptr)
+    if (rbuf->pixel_buf != nullptr)
     {
-        VirtualFree(bitmap_buffer, 0, MEM_RELEASE);
-        bitmap_buffer = nullptr;
+        VirtualFree(rbuf->pixel_buf, 0, MEM_RELEASE);
+        rbuf->pixel_buf = nullptr;
     }
 
-    bitmap_info.bmiHeader.biWidth = width;
-    // negative height used to make this a topdown buffer
-    bitmap_info.bmiHeader.biHeight = -height;
+    rbuf->bmpinfo.bmiHeader.biWidth = width;
+    rbuf->bmpinfo.bmiHeader.biHeight = -height; // negative for topdown buffer
 
-    bitmap_dimensions.width = width;
-    bitmap_dimensions.height = height;
+    rbuf->width = width;
+    rbuf->height = height;
 
     // NOTE (scott): no more DC because we can just allocate our
     // own memory since stretchdibits takes a pointer to raw memory
-    bitmap_buffer = VirtualAlloc(NULL, width * height * 4, MEM_COMMIT, PAGE_READWRITE);
-    assert (bitmap_buffer != nullptr);
-
-    // TODO (scott): clear to black
+    //
+    // NOTE (scott): don't have to worry about clearing to black because
+    // memory returned by virtual alloc is 0 initialized by default
+    rbuf->pixel_buf = VirtualAlloc(NULL, width * height * rbuf->bytes_per_pixel,
+                                   MEM_COMMIT, PAGE_READWRITE);
+    assert (rbuf->pixel_buf != nullptr);
 }
 
 internal void
-update_window(HDC device_context, xywh_rect client_rect, int x, int y, int width, int height)
+update_window(render_buffer* src_buf, HDC dest_dc, xywh_rect dest_rect)
 {
-    StretchDIBits(device_context,
-                  0, 0, bitmap_dimensions.width, bitmap_dimensions.height,
-                  0, 0, client_rect.width, client_rect.height, 
-                  bitmap_buffer, &bitmap_info, DIB_RGB_COLORS, SRCCOPY); 
+    StretchDIBits(dest_dc,
+                  0, 0, src_buf->width, src_buf->height,
+                  0, 0, dest_rect.width, dest_rect.height, 
+                  src_buf->pixel_buf, &src_buf->bmpinfo,
+                  DIB_RGB_COLORS, SRCCOPY); 
 }
 
 internal void
-render_crazy_gradient(int x_offset, int y_offset)
+render_crazy_gradient(render_buffer* rbuf, int x_offset, int y_offset)
 {
-    uint32_t* pixel_bmp_buffer = (uint32_t*)bitmap_buffer;
-    for (int y = 0; y < bitmap_dimensions.height; ++y)
+    uint32_t* pixel_buffer = (uint32_t*)rbuf->pixel_buf;
+    int buffer_height = rbuf->height;
+    int buffer_width = rbuf->width;
+
+    for (int y = 0; y < buffer_height; ++y)
     {
-        for (int x = 0; x < bitmap_dimensions.width; ++x)
+        for (int x = 0; x < buffer_width; ++x)
         {
             // warpy twist cylinder
             uint8_t r = (x+y_offset)*7%(y+1) - (y+x_offset)*100/(x+1); //RR 
@@ -235,7 +232,7 @@ render_crazy_gradient(int x_offset, int y_offset)
             *pixel_ptr++ = 0;              //XX
             */
 
-            *(pixel_bmp_buffer++) = (r << 16) | (g << 8) | b;
+            *(pixel_buffer++) = (r << 16) | (g << 8) | b;
         }
     }
 }
