@@ -10,6 +10,7 @@
 #include <cmath>
 #include <cassert>
 #include <cstdint>
+#include <cstdio>
 
 using blastbeat::utility::lrtb_rect;
 using blastbeat::utility::xywh_rect;
@@ -62,6 +63,9 @@ WinMain(HINSTANCE instance, HINSTANCE prev_instance, LPSTR cmd_line, int show_cm
         OutputDebugStringA("Window creation failed\n");
         return -1;
     }
+    
+    auto _win_rect = get_window_rect(window);
+    resize_dib_section(&g_backbuffer, _win_rect.width, _win_rect.height);
 
     g_game_running = true;
 
@@ -120,14 +124,6 @@ blastbeat_window_message_router(HWND window, UINT message, WPARAM w_param, LPARA
         case WM_QUIT:
             OutputDebugStringA("WM_QUIT\n");
             g_game_running = false;
-        break;
-
-        case WM_SIZE:
-        {
-            xywh_rect client_rect = get_window_rect(window);
-            resize_dib_section(&g_backbuffer, client_rect.width, client_rect.height);
-            OutputDebugStringA("WM_SIZE\n");
-        }
         break;
 
         case WM_ACTIVATEAPP:
@@ -199,8 +195,8 @@ internal void
 update_window(render_buffer* src_buf, HDC dest_dc, int dest_width, int dest_height)
 {
     StretchDIBits(dest_dc,
-                  0, 0, src_buf->width, src_buf->height,
                   0, 0, dest_width, dest_height, 
+                  0, 0, src_buf->width, src_buf->height,
                   src_buf->pixel_buf, &src_buf->bmpinfo,
                   DIB_RGB_COLORS, SRCCOPY); 
 }
