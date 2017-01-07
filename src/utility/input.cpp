@@ -87,5 +87,9 @@ namespace blastbeat
         vibration.wRightMotorSpeed = right_motor_vibration;
         xinput_set_state(gamepad_num, &vibration);
     }
+
+    void inject_key (uint64_t vkey, bool keydown, bool new_press)
+    {
+    }
 }
 

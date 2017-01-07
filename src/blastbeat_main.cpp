@@ -167,6 +167,15 @@ blastbeat_window_message_router(HWND window, UINT message, WPARAM w_param, LPARA
             g_game_running = false;
         break;
 
+        case WM_SYSKEYDOWN:
+        case WM_KEYDOWN:
+            blastbeat::inject_key(w_param, true, ((1 << 30) & l_param) == 0);
+        break;
+        case WM_SYSKEYUP:
+        case WM_KEYUP:
+            blastbeat::inject_key(w_param, false, true);
+        break;
+
         case WM_ACTIVATEAPP:
             OutputDebugStringA("WM_ACTIVATEAPP\n");
         break;
