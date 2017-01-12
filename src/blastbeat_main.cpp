@@ -7,14 +7,18 @@
 #include "utility/input.h"
 #include "utility/rect_converter.h"
 #include "utility/render_buffer.h"
+#include "utility/unused.h"
 
+#pragma warning(push, 0);
 #include <cmath>
 #include <cassert>
 #include <cstdint>
-#include <cstdio>
 #include <xinput.h>
+#pragma warning(pop);
 
 using blastbeat::gamepad_state;
+using blastbeat::get_gamepad_state;
+using blastbeat::set_gamepad_state;
 using blastbeat::init_input_system;
 using blastbeat::render_buffer;
 using blastbeat::utility::lrtb_rect;
@@ -42,6 +46,10 @@ global render_buffer g_backbuffer;
 int CALLBACK
 WinMain(HINSTANCE instance, HINSTANCE prev_instance, LPSTR cmd_line, int show_cmd)
 {
+    UNUSED_PARAM(prev_instance);
+    UNUSED_PARAM(cmd_line);
+    UNUSED_PARAM(show_cmd);
+
     init_input_system();
     init_render_buffer(&g_backbuffer, 4);
 
@@ -93,9 +101,9 @@ WinMain(HINSTANCE instance, HINSTANCE prev_instance, LPSTR cmd_line, int show_cm
         }
 
         bool any_gamepad_connected = false;
-        for (int gamepad_id = 0; gamepad_id < XUSER_MAX_COUNT; ++gamepad_id)
+        for (DWORD gamepad_id = 0; gamepad_id < XUSER_MAX_COUNT; ++gamepad_id)
         {
-            gamepad_state gamepad = blastbeat::get_gamepad_state(gamepad_id);
+            gamepad_state gamepad = get_gamepad_state(gamepad_id);
             if (gamepad.is_connected)
             {
                 any_gamepad_connected = true;
@@ -118,15 +126,15 @@ WinMain(HINSTANCE instance, HINSTANCE prev_instance, LPSTR cmd_line, int show_cm
 
                 if (gamepad.left_stick_x > XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE)
                 {
-                    blastbeat::set_gamepad_state(gamepad_id, 0, gamepad.left_stick_x);
+                    set_gamepad_state(gamepad_id, 0, (uint16_t)gamepad.left_stick_x);
                 }
                 else if (gamepad.left_stick_x < -XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE)
                 {
-                    blastbeat::set_gamepad_state(gamepad_id, -gamepad.left_stick_x, 0);
+                    set_gamepad_state(gamepad_id, (uint16_t)-gamepad.left_stick_x, 0);
                 }
                 else
                 {
-                    blastbeat::set_gamepad_state(gamepad_id, 0, 0);
+                    set_gamepad_state(gamepad_id, 0, 0);
                 }
             }
         }
@@ -137,7 +145,8 @@ WinMain(HINSTANCE instance, HINSTANCE prev_instance, LPSTR cmd_line, int show_cm
             ++y_offset;
         }
 
-        render_crazy_gradient(&g_backbuffer, x_offset, floor(500 * cos(y_offset / 70.0)));
+        render_crazy_gradient(&g_backbuffer, x_offset,
+                (int)floor(500.0 * cos(y_offset / 70.0)));
 
         auto device_context = GetDC(window);
         auto win_rect = get_window_rect(window);
@@ -247,7 +256,7 @@ resize_dib_section(render_buffer* rbuf, int width, int height)
     //
     // NOTE (scott): don't have to worry about clearing to black because
     // memory returned by virtual alloc is 0 initialized by default
-    rbuf->pixel_buf = VirtualAlloc(NULL, width * height * rbuf->bytes_per_pixel,
+    rbuf->pixel_buf = VirtualAlloc(NULL, (SIZE_T)width * height * rbuf->bytes_per_pixel,
                                    MEM_COMMIT, PAGE_READWRITE);
     assert (rbuf->pixel_buf != nullptr);
 }
@@ -274,9 +283,9 @@ render_crazy_gradient(render_buffer* rbuf, int x_offset, int y_offset)
         for (int x = 0; x < buffer_width; ++x)
         {
             // warpy twist cylinder
-            uint8_t r = (x+y_offset)*7%(y+1) - (y+x_offset)*100/(x+1); //RR 
-            uint8_t g = y_offset + y;                                  //GG
-            uint8_t b = x_offset + x;                                  //BB
+            uint32_t r = (uint8_t) ((x+y_offset)*7%(y+1) - (y+x_offset)*100/(x+1)); //RR 
+            uint32_t g = (uint8_t) (y_offset + y);                                  //GG
+            uint32_t b = (uint8_t) (x_offset + x);                                  //BB
 
             /* Rainbow bowser tie dye
             int new_y = y+x_offset;

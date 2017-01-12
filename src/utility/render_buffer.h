@@ -1,7 +1,9 @@
 #ifndef __RENDER_BUFFER_H__
 #define __RENDER_BUFFER_H__
 
+#pragma warning(push, 0)
 #include <windows.h>
+#pragma warning(pop)
 
 namespace blastbeat
 {

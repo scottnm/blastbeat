@@ -1,7 +1,11 @@
-#include "input.h"
+#include "utility/input.h"
+#include "utility/unused.h"
+
+#pragma warning(push, 0)
 #include <cassert>
 #include <windows.h>
 #include <xinput.h>
+#pragma warning(pop)
 
 namespace blastbeat
 {
@@ -12,6 +16,8 @@ namespace blastbeat
     typedef XINPUT_GET_STATE(xinput_get_state_delegate);
     XINPUT_GET_STATE(xinput_get_state_stub)
     {
+        (void)user_index;
+        (void)state;
         assert(input_system_initialized);
         return ERROR_DEVICE_NOT_CONNECTED;
     }
@@ -21,6 +27,8 @@ namespace blastbeat
     typedef XINPUT_SET_STATE(xinput_set_state_delegate);
     XINPUT_SET_STATE(xinput_set_state_stub)
     {
+        (void)user_index;
+        (void)state;
         assert(input_system_initialized);
         return ERROR_DEVICE_NOT_CONNECTED;
     }
@@ -39,16 +47,19 @@ namespace blastbeat
 
         if (x_input_library)
         {
+            #pragma warning(push)
+            #pragma warning(disable : 4191)
             xinput_get_state = (xinput_get_state_delegate*)GetProcAddress(x_input_library,
                     "XInputGetState");
             xinput_set_state = (xinput_set_state_delegate*)GetProcAddress(x_input_library,
                     "XInputSetState");
+            #pragma warning(pop)
         }
 
         input_system_initialized = true;
     }
 
-    gamepad_state get_gamepad_state(int gamepad_num)
+    gamepad_state get_gamepad_state(DWORD gamepad_num)
     {
         assert(input_system_initialized);
         gamepad_state input_state = {};
@@ -57,18 +68,18 @@ namespace blastbeat
         {
             input_state.left_stick_x = xi_state.Gamepad.sThumbLX;
             input_state.left_stick_y = xi_state.Gamepad.sThumbLY;
-            input_state.dpad_up = xi_state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_UP;
-            input_state.dpad_down = xi_state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_DOWN;
-            input_state.dpad_left = xi_state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_LEFT;
-            input_state.dpad_right = xi_state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_RIGHT;
-            input_state.start = xi_state.Gamepad.wButtons & XINPUT_GAMEPAD_START;
-            input_state.back = xi_state.Gamepad.wButtons & XINPUT_GAMEPAD_BACK;
-            input_state.lb = xi_state.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_SHOULDER;
-            input_state.rb = xi_state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_SHOULDER;
-            input_state.a = xi_state.Gamepad.wButtons & XINPUT_GAMEPAD_A;
-            input_state.b = xi_state.Gamepad.wButtons & XINPUT_GAMEPAD_B;
-            input_state.x = xi_state.Gamepad.wButtons & XINPUT_GAMEPAD_X;
-            input_state.y = xi_state.Gamepad.wButtons & XINPUT_GAMEPAD_Y;
+            input_state.dpad_up = (xi_state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_UP) != 0;
+            input_state.dpad_down = (xi_state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_DOWN) != 0;
+            input_state.dpad_left = (xi_state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_LEFT) != 0;
+            input_state.dpad_right = (xi_state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_RIGHT) != 0;
+            input_state.start = (xi_state.Gamepad.wButtons & XINPUT_GAMEPAD_START) != 0;
+            input_state.back = (xi_state.Gamepad.wButtons & XINPUT_GAMEPAD_BACK) != 0;
+            input_state.lb = (xi_state.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_SHOULDER) != 0;
+            input_state.rb = (xi_state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_SHOULDER) != 0;
+            input_state.a = (xi_state.Gamepad.wButtons & XINPUT_GAMEPAD_A) != 0;
+            input_state.b = (xi_state.Gamepad.wButtons & XINPUT_GAMEPAD_B) != 0;
+            input_state.x = (xi_state.Gamepad.wButtons & XINPUT_GAMEPAD_X) != 0;
+            input_state.y = (xi_state.Gamepad.wButtons & XINPUT_GAMEPAD_Y) != 0;
             input_state.is_connected = true;
         }
         else
@@ -78,7 +89,7 @@ namespace blastbeat
         return input_state;
     }
 
-    void set_gamepad_state (int gamepad_num, uint16_t left_motor_vibration, uint16_t right_motor_vibration)
+    void set_gamepad_state (DWORD gamepad_num, uint16_t left_motor_vibration, uint16_t right_motor_vibration)
     {
         /* set the state */
         assert(input_system_initialized);
@@ -90,6 +101,9 @@ namespace blastbeat
 
     void inject_key (uint64_t vkey, bool keydown, bool new_press)
     {
+        UNUSED_PARAM(vkey);
+        UNUSED_PARAM(keydown);
+        UNUSED_PARAM(new_press);
     }
 }
 

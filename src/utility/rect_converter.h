@@ -1,7 +1,9 @@
 #ifndef __RECT_CONVERTER_H__
 #define __RECT_CONVERTER_H__
 
+#pragma warning(push, 0)
 #include <windows.h>
+#pragma warning(pop)
 
 namespace blastbeat
 {
