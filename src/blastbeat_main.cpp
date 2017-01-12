@@ -92,11 +92,13 @@ WinMain(HINSTANCE instance, HINSTANCE prev_instance, LPSTR cmd_line, int show_cm
             DispatchMessage(&message); 
         }
 
+        bool any_gamepad_connected = false;
         for (int gamepad_id = 0; gamepad_id < XUSER_MAX_COUNT; ++gamepad_id)
         {
             gamepad_state gamepad = blastbeat::get_gamepad_state(gamepad_id);
             if (gamepad.is_connected)
             {
+                any_gamepad_connected = true;
                 if (gamepad.b)
                 {
                     ++x_offset;
@@ -127,6 +129,12 @@ WinMain(HINSTANCE instance, HINSTANCE prev_instance, LPSTR cmd_line, int show_cm
                     blastbeat::set_gamepad_state(gamepad_id, 0, 0);
                 }
             }
+        }
+
+        if (!any_gamepad_connected)
+        {
+            ++x_offset;
+            ++y_offset;
         }
 
         render_crazy_gradient(&g_backbuffer, x_offset, floor(500 * cos(y_offset / 70.0)));
@@ -168,9 +176,12 @@ blastbeat_window_message_router(HWND window, UINT message, WPARAM w_param, LPARA
         break;
 
         case WM_SYSKEYDOWN:
+            // allow ALT+Fn4 to close window
+            if ((w_param == VK_F4) && (l_param & (1 << 29)) != 0) { g_game_running = false; }
         case WM_KEYDOWN:
             blastbeat::inject_key(w_param, true, ((1 << 30) & l_param) == 0);
         break;
+
         case WM_SYSKEYUP:
         case WM_KEYUP:
             blastbeat::inject_key(w_param, false, true);
