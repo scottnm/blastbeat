@@ -4,7 +4,7 @@ SETLOCAL
 setlocal EnableDelayedExpansion
 SET "BUILD_DIR=..\builds"
 SET "CC=cl"
-SET "CFLAGS=-FC -Zi"
+SET "CFLAGS=-FC -Zi -Wall"
 SET "LIBS=user32.lib gdi32.lib"
 
 SET "SRC_PREFIX=..\src\"
@@ -15,10 +15,9 @@ FOR %%F IN (%__FILES__%) DO (
         SET "FILES=!FILES! %SRC_PREFIX%%%F"
 )
 
-SET __INCLUDE_DIRS__=.\ ^
-                     .\utility
+SET __INCLUDE_DIRS__=.\
 FOR %%D IN (%__INCLUDE_DIRS__%) DO (
-        SET "INCLUDE_DIRS=!INCLUDE_DIRS! /I%%D"
+        SET "INCLUDE_DIRS=!INCLUDE_DIRS! /I %SRC_PREFIX%%%D"
 )
 
 mkdir %BUILD_DIR%
