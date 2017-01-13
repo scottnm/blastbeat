@@ -7,6 +7,7 @@
 #include "utility/input.h"
 #include "utility/rect_converter.h"
 #include "utility/render_buffer.h"
+#include "utility/static_defs.h"
 #include "utility/unused.h"
 
 #pragma warning(push, 0);
@@ -16,27 +17,16 @@
 #include <xinput.h>
 #pragma warning(pop);
 
-using blastbeat::gamepad_state;
-using blastbeat::get_gamepad_state;
-using blastbeat::set_gamepad_state;
-using blastbeat::init_input_system;
-using blastbeat::render_buffer;
-using blastbeat::utility::lrtb_rect;
-using blastbeat::utility::xywh_rect;
-using blastbeat::utility::lrtb_to_xywh;
-
-#define global static
-#define local_persist static
-#define internal static
+using namespace blastbeat;
 
 /******************
  * Internal funcs *
  ******************/
-internal void       init_render_buffer (render_buffer* rbuf, int bytes_per_pixel);
-internal xywh_rect  get_window_rect (HWND window);
-internal void       resize_dib_section (render_buffer* rbuf, int width, int height);
-internal void       update_window (render_buffer* src_buf, HDC dest_dc, int dest_width, int dest_height);
-internal void       render_crazy_gradient (render_buffer* rbuf, int x_offset, int y_offset);
+internal void init_render_buffer (render_buffer* rbuf, int bytes_per_pixel);
+internal utility::xywh_rect get_window_rect (HWND window);
+internal void resize_dib_section (render_buffer* rbuf, int width, int height);
+internal void update_window (render_buffer* src_buf, HDC dest_dc, int dest_width, int dest_height);
+internal void render_crazy_gradient (render_buffer* rbuf, int x_offset, int y_offset);
 
 // TODO (scott): fix global scope later
 global bool g_game_running;
@@ -50,7 +40,7 @@ WinMain(HINSTANCE instance, HINSTANCE prev_instance, LPSTR cmd_line, int show_cm
     UNUSED_PARAM(cmd_line);
     UNUSED_PARAM(show_cmd);
 
-    init_input_system();
+    input::init();
     init_render_buffer(&g_backbuffer, 4);
 
     WNDCLASS window_class = {};
@@ -103,7 +93,7 @@ WinMain(HINSTANCE instance, HINSTANCE prev_instance, LPSTR cmd_line, int show_cm
         bool any_gamepad_connected = false;
         for (DWORD gamepad_id = 0; gamepad_id < XUSER_MAX_COUNT; ++gamepad_id)
         {
-            gamepad_state gamepad = get_gamepad_state(gamepad_id);
+            input::gamepad_state gamepad = input::get_gamepad_state(gamepad_id);
             if (gamepad.is_connected)
             {
                 any_gamepad_connected = true;
@@ -126,15 +116,15 @@ WinMain(HINSTANCE instance, HINSTANCE prev_instance, LPSTR cmd_line, int show_cm
 
                 if (gamepad.left_stick_x > XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE)
                 {
-                    set_gamepad_state(gamepad_id, 0, (uint16_t)gamepad.left_stick_x);
+                    input::set_gamepad_state(gamepad_id, 0, (uint16_t)gamepad.left_stick_x);
                 }
                 else if (gamepad.left_stick_x < -XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE)
                 {
-                    set_gamepad_state(gamepad_id, (uint16_t)-gamepad.left_stick_x, 0);
+                    input::set_gamepad_state(gamepad_id, (uint16_t)-gamepad.left_stick_x, 0);
                 }
                 else
                 {
-                    set_gamepad_state(gamepad_id, 0, 0);
+                    input::set_gamepad_state(gamepad_id, 0, 0);
                 }
             }
         }
@@ -188,12 +178,12 @@ blastbeat_window_message_router(HWND window, UINT message, WPARAM w_param, LPARA
             // allow ALT+Fn4 to close window
             if ((w_param == VK_F4) && (l_param & (1 << 29)) != 0) { g_game_running = false; }
         case WM_KEYDOWN:
-            blastbeat::inject_key(w_param, true, ((1 << 30) & l_param) == 0);
+            input::inject_key(w_param, true, ((1 << 30) & l_param) == 0);
         break;
 
         case WM_SYSKEYUP:
         case WM_KEYUP:
-            blastbeat::inject_key(w_param, false, true);
+            input::inject_key(w_param, false, true);
         break;
 
         case WM_ACTIVATEAPP:
@@ -228,12 +218,12 @@ init_render_buffer (render_buffer* rbuf, int bytes_per_pixel)
     rbuf->bytes_per_pixel = bytes_per_pixel;
 }
 
-internal xywh_rect
+internal utility::xywh_rect
 get_window_rect(HWND window)
 {
-    lrtb_rect new_rect;
+    utility::lrtb_rect new_rect;
     GetClientRect(window, &new_rect);
-    return lrtb_to_xywh(new_rect);
+    return utility::lrtb_to_xywh(new_rect);
 }
 
 internal void
