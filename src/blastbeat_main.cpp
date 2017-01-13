@@ -4,9 +4,10 @@
  *****************************/
 
 #include "blastbeat_main.h"
-#include "utility/input.h"
+#include "input/input.h"
+#include "rendering/render_buffer.h"
+#include "sound/sound.h"
 #include "utility/rect_converter.h"
-#include "utility/render_buffer.h"
 #include "utility/static_defs.h"
 #include "utility/unused.h"
 
@@ -67,6 +68,8 @@ WinMain(HINSTANCE instance, HINSTANCE prev_instance, LPSTR cmd_line, int show_cm
         OutputDebugStringA("Window creation failed\n");
         return -1;
     }
+
+    sound::init(window, 48000, 48000 * sizeof(int16_t) * 2);
     
     auto _win_rect = get_window_rect(window);
     resize_dib_section(&g_backbuffer, _win_rect.width, _win_rect.height);
@@ -247,7 +250,7 @@ resize_dib_section(render_buffer* rbuf, int width, int height)
     // NOTE (scott): don't have to worry about clearing to black because
     // memory returned by virtual alloc is 0 initialized by default
     rbuf->pixel_buf = VirtualAlloc(NULL, (SIZE_T)width * height * rbuf->bytes_per_pixel,
-                                   MEM_COMMIT, PAGE_READWRITE);
+                                   MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
     assert (rbuf->pixel_buf != nullptr);
 }
 

@@ -1,4 +1,5 @@
-#include "utility/input.h"
+#include "input.h"
+
 #include "utility/static_defs.h"
 #include "utility/unused.h"
 
@@ -44,10 +45,10 @@ namespace blastbeat
             /*
              * Deal with all of the input state dll pointer nonsense here
              */
-            HMODULE x_input_library = LoadLibrary("XInput1_4.dll");
+            HMODULE x_input_library = LoadLibraryA("XInput1_4.dll");
             if (!x_input_library)
             {
-                x_input_library = LoadLibrary("xinput1_3.dll");
+                x_input_library = LoadLibraryA("xinput1_3.dll");
             }
 
             if (x_input_library)
