@@ -19,11 +19,11 @@
 #pragma warning(pop);
 
 using namespace blastbeat;
+using blastbeat::rendering::render_buffer;
 
 /******************
  * Internal funcs *
  ******************/
-internal void init_render_buffer (render_buffer* rbuf, int bytes_per_pixel);
 internal utility::xywh_rect get_window_rect (HWND window);
 internal void resize_dib_section (render_buffer* rbuf, int width, int height);
 internal void update_window (render_buffer* src_buf, HDC dest_dc, int dest_width, int dest_height);
@@ -42,7 +42,7 @@ WinMain(HINSTANCE instance, HINSTANCE prev_instance, LPSTR cmd_line, int show_cm
     UNUSED_PARAM(show_cmd);
 
     input::init();
-    init_render_buffer(&g_backbuffer, 4);
+    rendering::init_render_buffer(&g_backbuffer, 4);
 
     WNDCLASS window_class = {};
     // TODO (scott) determine if these actually matter
@@ -209,16 +209,6 @@ blastbeat_window_message_router(HWND window, UINT message, WPARAM w_param, LPARA
     }
 
     return result;
-}
-
-internal void
-init_render_buffer (render_buffer* rbuf, int bytes_per_pixel)
-{
-    rbuf->bmpinfo.bmiHeader.biSize = sizeof(rbuf->bmpinfo.bmiHeader);
-    rbuf->bmpinfo.bmiHeader.biPlanes = 1;
-    rbuf->bmpinfo.bmiHeader.biBitCount = 32;
-    rbuf->bmpinfo.bmiHeader.biCompression = BI_RGB;
-    rbuf->bytes_per_pixel = bytes_per_pixel;
 }
 
 internal utility::xywh_rect

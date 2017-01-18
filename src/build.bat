@@ -11,6 +11,7 @@ SET "SRC_PREFIX=..\src\"
 SET __FILES__=blastbeat_main.cpp ^
               input\input.cpp ^
               sound\sound.cpp ^
+              rendering\render_buffer.cpp ^
               utility\rect_converter.cpp
 FOR %%F IN (%__FILES__%) DO (
         SET "FILES=!FILES! %SRC_PREFIX%%%F"
